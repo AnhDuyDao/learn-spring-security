@@ -3,16 +3,21 @@ package com.duyanh.springboot.service;
 import com.duyanh.springboot.model.User;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.text.ParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 @Service
 public class JwtService {
 
-    private String secretKey = "9f3a7c2d8e6b1a4f5d92c3e7b8a1f0d4c6e2b9a7f3d1c5e8a4b2c7d9e6f1a3b8";
+    @Value("${jwt.secret-key}")
+    private String secretKey;
 
     public String generationAccessToken(User user) {
 
@@ -60,5 +65,16 @@ public class JwtService {
             throw new RuntimeException(e);
         }
         return jwsObject.serialize();
+    }
+
+    public boolean verifyToken(String token) throws ParseException, JOSEException {
+        SignedJWT signedJWT = SignedJWT.parse(token);
+
+        Date expirationTime = signedJWT.getJWTClaimsSet().getExpirationTime();
+        if (expirationTime.before(new Date())) {
+            return false;
+        }
+
+        return signedJWT.verify(new MACVerifier(secretKey));
     }
 }

@@ -25,13 +25,15 @@ import java.nio.charset.StandardCharsets;
 @EnableWebSecurity
 public class SecurityConfiguration {
     private static final String[] WHITE_LIST = {
-            "/products", "/auth/login", "/users"
+            "/auth/login", "/users"
     };
 
     private final LoginUserDetailService loginUserDetailService;
+    private final JwtDecoderConfiguration jwtDecoderConfiguration;
 
-    public SecurityConfiguration(LoginUserDetailService loginUserDetailService) {
+    public SecurityConfiguration(LoginUserDetailService loginUserDetailService, JwtDecoderConfiguration jwtDecoderConfiguration) {
         this.loginUserDetailService = loginUserDetailService;
+        this.jwtDecoderConfiguration = jwtDecoderConfiguration;
     }
 
     @Bean
@@ -42,18 +44,11 @@ public class SecurityConfiguration {
                         .requestMatchers(WHITE_LIST).permitAll()
                         .anyRequest().authenticated()
                 )
-                .oauth2ResourceServer((oauth2) -> oauth2.jwt(Customizer.withDefaults()));
+                .oauth2ResourceServer((oauth2) -> oauth2
+                        .jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoderConfiguration)));
         return http.build();
     }
 
-    @Bean
-    public JwtDecoder jwtDecoder() {
-        String key = "12345678";
-        SecretKey secretKey = new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "HS512");
-        return NimbusJwtDecoder.withSecretKey(secretKey)
-                .macAlgorithm(MacAlgorithm.HS512)
-                .build();
-    }
 
     @Bean
     public AuthenticationManager authenticationManager() {
